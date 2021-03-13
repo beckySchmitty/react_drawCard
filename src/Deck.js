@@ -5,7 +5,9 @@ import axios from "axios";
 
 const Deck = () => {
     const [cards, setCards] = useState([]);
-    const [deckID, setDeckID] = useState(null)
+    const [deckID, setDeckID] = useState(null);
+    const [autoDraw, setAutoDraw] = useState(false);
+    const timerRef = useRef(null);
 
     useEffect(() => {
         async function getDeck() {
@@ -16,23 +18,62 @@ const Deck = () => {
       }, [setDeckID]);
 
       
-
-    function drawCard() {
-    useEffect(() => {
+      useEffect(() => {
+        /* Draw a card via API, add card to state "drawn" list */
         async function getCard() {
-            const resp = await axios.get(`https://deckofcardsapi.com/api/deck/${deckID}/draw/?count=1`);
-            setCards(resp.data.img)
+    
+          try {
+            let drawResp = await axios.get(`https://deckofcardsapi.com/api/deck/${deckID}/draw/`);
+    
+            if (drawResp.data.remaining === 0) {
+              setAutoDraw(false);
+              throw new Error("no cards remaining!");
+            }
+    
+            const card = drawResp.data.cards[0];
+    
+            setCards(c => [
+              ...c,
+              {
+                id: card.code,
+                name: card.suit + " " + card.value,
+                image: card.image
+              }
+            ]);
+          } catch (err) {
+            alert(err);
+          }
+        }
+    
+        if (autoDraw && !timerRef.current) {
+          timerRef.current = setInterval(async () => {
+            await getCard();
+          }, 1000);
+        }
+    
+        return () => {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
         };
-        getCard();
-    }, [cards])
+      }, [autoDraw, setAutoDraw, cards]);
 
-    }
+
+      const toggleAutoDraw = () => {
+        setAutoDraw(auto => !auto);
+      };
+    
 
     return (
-        <div>
-            {cards.map(c => <Card img={c.img} />)}
-            <button onClick={drawCard}>Draw Card</button>
-        </div>
+        <div className="Deck">
+        {deckID ? (
+          <button className="Deck-get" onClick={toggleAutoDraw}>
+            {autoDraw ? "STOP DRAWING" : "KEEP DRAWING"} 
+          </button>
+        ) : null}
+        <div className="Deck-cards">{cards.map(c => (
+            <Card key={c.id} name={c.name} img={c.image} />
+        ))}</div>
+      </div>
     )
 }
 
