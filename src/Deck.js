@@ -5,21 +5,28 @@ import axios from "axios";
 
 const Deck = () => {
     const [cards, setCards] = useState([]);
-    const [deckID, setDeckID]
+    const [deckID, setDeckID] = useState(null)
 
     useEffect(() => {
         async function getDeck() {
             const resp = await axios.get(`https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1`);
             setDeckID(resp.data.deck_id)
         }
+        getDeck()
+      }, [setDeckID]);
 
+      
+
+    function drawCard() {
+    useEffect(() => {
         async function getCard() {
             const resp = await axios.get(`https://deckofcardsapi.com/api/deck/${deckID}/draw/?count=1`);
             setCards(resp.data.img)
         };
-        getDeck();
         getCard();
     }, [cards])
+
+    }
 
     return (
         <div>
